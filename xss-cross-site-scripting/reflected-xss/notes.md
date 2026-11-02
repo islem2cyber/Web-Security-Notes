@@ -2,42 +2,42 @@
 
 ## How It Works
 
-The application takes user input from the request (usually the URL) and includes it directly in the response without sanitization. The browser then renders and executes it.
+Reflected XSS occurs when attacker-controlled input is included in an HTTP request and then reflected back in a response without safe output handling. If the browser interprets the returned content as executable HTML, script, or another active context, the payload can execute.
 
-```
-Attacker crafts malicious URL
+```text
+Attacker-controlled request
         ↓
-Victim clicks the link
+Application reflects input in response
         ↓
-Server reflects input back in HTML response
+Browser interprets the resulting content
         ↓
-Browser executes the script
+Script executes under the page's origin
 ```
 
-> ⚠️ Reflected XSS is **non-persistent** — the payload is not stored. The victim must be tricked into clicking a crafted link.
+> Reflected XSS is usually non-persistent because the payload is delivered in the request itself. The victim must load the malicious request, but delivery can happen through different mechanisms, including a crafted URL or a maliciously generated request.
 
 ---
 
 ## Basic Example
 
 **Vulnerable code (server-side):**
-```
+```text
 Search results for: <user input here>
 ```
 
 **Normal request:**
-```
+```text
 https://site.com/search?q=hello
 → Search results for: hello
 ```
 
 **Malicious request:**
-```
+```text
 https://site.com/search?q=<script>alert(1)</script>
 → Search results for: <script>alert(1)</script>
 ```
 
-The browser sees a `<script>` tag and executes it.
+The browser sees the reflected `<script>` element and executes it.
 
 ---
 
@@ -52,13 +52,13 @@ The browser sees a `<script>` tag and executes it.
 <script>alert(1)</script>
 ```
 
-**Why it works:** No sanitization. The input lands directly inside the HTML body as a `<script>` tag, which the browser executes immediately.
+**Why it works:** The input is inserted into HTML without safe output handling, so it is interpreted as active markup by the browser.
 
 ---
 
 ## Key Takeaways
 
-- Always check where your input appears in the response
-- If input lands in HTML body with no encoding → try `<script>` directly
-- Reflected XSS requires **social engineering** to deliver (the victim must click the link)
-- Often found in: search boxes, error messages, URL parameters reflected on page
+- Always check where the attacker-controlled value appears in the response.
+- If the value lands in HTML without context-appropriate encoding, payloads such as `<script>` may execute.
+- Reflection does not guarantee exploitability; the result depends on the output context, browser behavior, and relevant security controls.
+- Reflected XSS is often found in search parameters, error messages, and other request-driven responses.

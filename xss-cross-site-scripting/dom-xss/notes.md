@@ -2,62 +2,69 @@
 
 ## How It Works
 
-Unlike Reflected and Stored XSS, DOM XSS happens **entirely in the browser**. The server is not involved. JavaScript on the page reads attacker-controlled data (source) and writes it to the page unsafely (sink).
+Unlike reflected and stored XSS, DOM-based XSS happens in the browser as a result of client-side JavaScript processing data from an attacker-controlled source and then passing it to a dangerous sink.
 
-```
-Attacker controls part of the URL or page data  ← SOURCE
-        ↓
-JavaScript reads it
-        ↓
-JavaScript writes it to the DOM unsafely         ← SINK
-        ↓
-Browser executes the injected script
+```text
+Attacker-controlled input → Source → client-side processing → Sink → browser interpretation
 ```
 
-> The server never sees the malicious payload. The vulnerability is in the **client-side JavaScript**.
+The key point is that the vulnerability is in the JavaScript logic on the page. The server may never receive the malicious payload in a raw form, even though the browser still executes it.
 
 ---
 
-## Sources (Where data comes from)
+## Sources
+
+A source is any value that can be influenced by an attacker under the relevant threat model and then read by JavaScript.
 
 ```javascript
-location.search      // everything after ? in the URL
-location.hash        // everything after # in the URL
+location.search      // query string
+location.hash        // fragment
 location.href        // full URL
-document.referrer    // the referring page URL
-document.cookie      // cookies
+location.pathname    // path portion
+document.referrer    // previous page URL
+window.name          // browser-managed value; relevant when attacker can influence it
+postMessage data     // values received from other windows or frames
 ```
+
+A value such as `document.cookie` is not automatically a DOM XSS source simply because it contains data. It is browser-managed state, and whether it is attacker-controlled depends on the application and threat model.
 
 ---
 
-## Sinks (Where data is written unsafely)
+## Sinks
+
+A sink is a place where attacker-controlled data is interpreted or written in a way that can trigger script execution or dangerous browser behavior.
 
 ```javascript
-// HTML sinks — parse and render HTML
+// HTML sinks
 element.innerHTML
 element.outerHTML
 document.write()
 document.writeln()
 
-// JS execution sinks — execute strings as code
+// JavaScript execution sinks
 eval()
 setTimeout("string")
 setInterval("string")
 new Function("string")
 
-// jQuery sinks
-$()                  // selector / HTML creator
-.html()              // like innerHTML
-.attr("href", ...)   // sets attributes
+// jQuery and DOM manipulation methods
+$(...)                // selector or HTML creation
+.html(...)
+.append(...)
+.attr("href", value)
 ```
+
+Some sinks are more dangerous depending on the surrounding context and the browser's parsing rules.
 
 ---
 
 ## The Golden Rule
 
+```text
+Potential vulnerability exists when attacker-controlled input reaches a sink through unsafe client-side logic.
 ```
-If data flows from a SOURCE to a SINK with no sanitization → DOM XSS
-```
+
+This is not proof of exploitability by itself. The flow must be evaluated against the browser context, output handling, and the exact code path in use.
 
 ---
 
@@ -68,12 +75,14 @@ If data flows from a SOURCE to a SINK with no sanitization → DOM XSS
 | [document-write.md](./document-write.md) | `document.write()` | `location.search` | ✅ |
 | [innerHTML.md](./innerHTML.md) | `innerHTML` | `location.search` | ✅ |
 | [jquery.md](./jquery.md) | `attr()` + `$()` | `location.search` + `location.hash` | ✅ |
-| [angularjs.md](./angularjs.md) | `{{}}` expression | HTML body | ✅ |
+| [angularjs.md](./angularjs.md) | AngularJS template expression | AngularJS-controlled DOM region | ✅ |
 
 ---
 
 ## Key Takeaways
 
-- DOM XSS requires reading the **client-side JS**, not just the server response
-- Use browser DevTools to trace data flow from source to sink
-- Tools like Burp Suite DOM Invader can automate source/sink detection
+- DOM XSS depends on the client-side data flow, not only on server-side response handling.
+- A source is only relevant when the data is attacker-controlled in the relevant scenario.
+- A sink is only dangerous when data is interpreted in a browser-executable context.
+- Use browser DevTools to trace data flow from source to sink.
+- DOM Invader and similar tools can help identify suspicious source/sink pairs, but they do not replace careful reasoning about the actual context.

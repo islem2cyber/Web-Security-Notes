@@ -2,16 +2,15 @@
 
 ## The Sink
 
-`innerHTML` sets the HTML content of an element. Unlike `innerText`, it **parses and renders HTML** — making it a dangerous sink when user input reaches it.
+`innerHTML` sets the HTML content of an element. It parses the assigned string as HTML and inserts the resulting DOM nodes, which makes it a dangerous sink when attacker-controlled data reaches it.
 
 ```javascript
 element.innerHTML = userInput;
-// if userInput contains HTML → it gets rendered
-// if it contains <script> → browsers block it (modern browsers)
-// but <img onerror=...> or <svg onload=...> still work ✅
 ```
 
-> ⚠️ Modern browsers do **not** execute `<script>` tags injected via `innerHTML` — but event handlers like `onerror` and `onload` still execute.
+This is dangerous because the browser will parse markup in the assigned value, not just treat it as plain text.
+
+> Modern browsers usually do not execute `<script>` tags inserted via `innerHTML`, but event handlers such as `onerror` and `onload` can still execute when the markup is parsed as HTML.
 
 ---
 
@@ -25,18 +24,18 @@ document.getElementById('searchMessage').innerHTML = location.search;
 ```
 
 **What happens normally:**
-```
+```text
 URL: ?search=hello
 → <div id="searchMessage">?search=hello</div>
 ```
 
 **The attack:**
-```
+```text
 Payload: <img src=1 onerror=alert(1)>
 ```
 
 **Full URL:**
-```
+```text
 https://site.com/?search=<img src=1 onerror=alert(1)>
 ```
 
@@ -47,22 +46,25 @@ https://site.com/?search=<img src=1 onerror=alert(1)>
 </div>
 ```
 
-The browser tries to load `src=1` (fails), then triggers `onerror` → executes `alert(1)`.
+The browser attempts to load the image, the load fails, and the `onerror` handler executes.
 
 ---
 
-## innerHTML vs innerText
+## innerHTML vs textContent
 
-| | innerHTML | innerText |
+| Property | Behavior | Security note |
 |---|---|---|
-| Parses HTML | ✅ Yes | ❌ No |
-| Executes event handlers | ✅ Yes | ❌ No |
-| Safe for user input | ❌ No | ✅ Yes |
+| `innerHTML` | Parses the assigned value as HTML | Dangerous when untrusted HTML reaches it |
+| `textContent` | Inserts plain text without parsing HTML | Usually the correct choice for untrusted plain text |
+| `innerText` | Exposes rendered text from the DOM | Not the general security replacement for `innerHTML` |
+
+`textContent` is typically the appropriate choice when the goal is to display untrusted text. It is not a universal solution for every browser context: URL handling, JavaScript execution, CSS, and HTML parsing each require context-specific controls.
 
 ---
 
 ## Key Takeaways
 
-- `innerHTML` is one of the most common DOM XSS sinks
-- `<script>` won't work here — use `<img onerror=>` or `<svg onload=>` instead
-- `innerText` is the safe alternative — it treats everything as plain text
+- `innerHTML` is a common DOM XSS sink because it parses the assigned value as HTML.
+- Use `textContent` for untrusted plain text instead of inserting raw HTML.
+- `innerText` is not the general security replacement for `innerHTML`.
+- The correct defense depends on the actual context: HTML, attribute, URL, JavaScript, and CSS must each be handled appropriately.

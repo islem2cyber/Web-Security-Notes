@@ -1,8 +1,10 @@
 # DOM XSS — jQuery Sinks
 
-## Why jQuery is Dangerous
+## Why jQuery is Relevant
 
-jQuery is a JavaScript library. Some of its functions accept HTML strings and inject them directly into the DOM — making them dangerous sinks when they receive user-controlled input.
+jQuery is not automatically vulnerable. The risk depends on how user-controlled input is interpreted and what the resulting value is used for. Some jQuery APIs construct selectors, some parse HTML strings, and some set attributes or DOM content.
+
+The important question is not "Is jQuery present?" but "Does untrusted input reach a dangerous operation in a browser-executable context?"
 
 ---
 
@@ -10,22 +12,22 @@ jQuery is a JavaScript library. Some of its functions accept HTML strings and in
 
 ### How it works
 
-`attr()` sets an HTML attribute on an element. If the value comes from the URL and is placed in an `href`, an attacker can inject a `javascript:` URL.
+`attr()` sets an HTML attribute on an element. If an attacker-controlled value is assigned to an `href`, a `javascript:` URL can become active when the user clicks the element.
 
 **Vulnerable code:**
 ```javascript
 $(function() {
-    $('#backLink').attr("href",
+    $('#backLink').attr('href',
         (new URLSearchParams(window.location.search)).get('returnUrl')
     );
 });
 ```
 
 **Data flow:**
-```
-URL ?returnUrl=...   ← SOURCE
+```text
+URL ?returnUrl=...   ← source
         ↓
-.attr("href", ...)   ← SINK
+.attr('href', ...)   ← sink
         ↓
 <a href="...">Back</a>
 ```
@@ -35,7 +37,7 @@ URL ?returnUrl=...   ← SOURCE
 **Level:** Apprentice ✅ Solved
 
 **Attack:**
-```
+```text
 ?returnUrl=javascript:alert(document.domain)
 ```
 
@@ -44,9 +46,9 @@ URL ?returnUrl=...   ← SOURCE
 <a href="javascript:alert(document.domain)">Back</a>
 ```
 
-When the user clicks "Back" → `alert(document.domain)` executes.
+When the user clicks the link, the browser navigates to the `javascript:` URL and executes the script.
 
-> `javascript:` is a valid URL protocol. When used in `href` and clicked, the browser executes the JS.
+> Dangerous URL schemes matter. The issue is not that `attr()` is universally unsafe, but that untrusted input can be used to set a dangerous URL in a browser-executed context.
 
 ---
 
@@ -54,7 +56,7 @@ When the user clicks "Back" → `alert(document.domain)` executes.
 
 ### How it works
 
-jQuery's `$()` function is normally used to select elements: `$("#myDiv")`. But if the input starts with `<`, jQuery treats it as HTML and **creates new DOM elements** from it.
+jQuery's `$()` function is commonly used to select elements, but if the string starts with HTML-like content, jQuery can parse it as HTML and create elements. This is only dangerous when the value is attacker-controlled and the resulting HTML is interpreted by the browser.
 
 **Vulnerable code:**
 ```javascript
@@ -65,17 +67,17 @@ $(window).on('hashchange', function() {
 ```
 
 **Data flow:**
-```
-URL #...             ← SOURCE (location.hash)
+```text
+URL #...             ← source (location.hash)
         ↓
-$(location.hash)     ← SINK ($() creates HTML from string)
+$(location.hash)     ← sink
         ↓
-New element injected into DOM
+New element created in the DOM
 ```
 
 ### The problem: how to trigger hashchange without user interaction?
 
-A `hashchange` event fires when the `#` part of the URL changes. Normally a user would have to navigate to a different hash — but an attacker can force it using an `<iframe>`:
+The `hashchange` event triggers when the fragment part of the URL changes. In a lab, this can be forced using an iframe or another controlled navigation pattern.
 
 ```html
 <iframe
@@ -84,47 +86,24 @@ A `hashchange` event fires when the `#` part of the URL changes. Normally a user
 >
 ```
 
-**What happens step by step:**
-```
-1. iframe loads the vulnerable page with empty hash (#)
-        ↓
-2. onload fires → appends payload to the hash
-        ↓
-3. hash changes → hashchange event fires
-        ↓
-4. JS reads location.hash → passes to $()
-        ↓
-5. jQuery creates <img src=1 onerror=alert(1)>
-        ↓
-6. onerror fires → alert(1) executes 💥
-```
-
 ### Lab: DOM XSS in jQuery selector sink using hashchange
 
 **Level:** Apprentice ✅ Solved
-
-**Payload (delivered via iframe):**
-```html
-<iframe
-    src="https://TARGET.com#"
-    onload="this.src+='<img src=1 onerror=alert(1)>'"
->
-```
 
 ---
 
 ## Summary
 
-| Sink | Source | Payload Type | Trigger |
-|---|---|---|---|
-| `attr("href", ...)` | `location.search` | `javascript:alert()` | User clicks link |
-| `$()` selector | `location.hash` | `<img onerror=alert()>` | iframe forces hashchange |
+| Sink | Source | Risk condition |
+|---|---|---|
+| `attr('href', ...)` | `location.search` | Dangerous URL value executes when activated |
+| `$()` selector | `location.hash` | HTML-like input is parsed and inserted into DOM |
 
 ---
 
 ## Key Takeaways
 
-- jQuery's `$()` creates HTML when input starts with `<` — not just a selector
-- `javascript:` URIs in `href` attributes execute when clicked
-- `hashchange` attacks often need an external delivery mechanism (iframe)
-- Newer jQuery versions patched the `#` prefix issue, but old code is still in the wild
+- `$()` is not inherently vulnerable; risk depends on the actual input and browser interpretation.
+- `attr()` is not automatically unsafe; it becomes a risk when it sets a dangerous URL or browser-executable attribute value.
+- The important question is the context: selector, HTML string, attribute, or URL.
+- Version differences and browser quirks matter when analyzing older jQuery-based patterns.

@@ -2,7 +2,7 @@
 
 ## What is AngularJS?
 
-AngularJS is a JavaScript framework that processes HTML pages and adds dynamic behavior. When it finds the `ng-app` attribute on an element, it takes control of that region and processes **template expressions** inside `{{ }}`.
+AngularJS is a JavaScript framework that processes HTML pages and adds dynamic behavior. When it sees an `ng-app` attribute, AngularJS takes control of that DOM region and evaluates AngularJS expressions, which are not the same thing as general JavaScript execution in every context.
 
 ```html
 <div ng-app>
@@ -12,13 +12,11 @@ AngularJS is a JavaScript framework that processes HTML pages and adds dynamic b
 
 **Result rendered in browser:** `4`
 
-AngularJS evaluates anything inside `{{ }}` as a JavaScript expression.
-
 ---
 
 ## The Vulnerability
 
-If user input is reflected inside an element that has `ng-app` (or any parent that does), AngularJS will evaluate it as an expression — **even without `<script>` tags, angle brackets, or event handlers**.
+If attacker-controlled data is reflected into an AngularJS-controlled template expression, AngularJS may evaluate that expression according to AngularJS expression rules. This can happen even when standard HTML payloads like `<script>` are blocked or HTML-encoded.
 
 ```html
 <body ng-app>
@@ -26,23 +24,15 @@ If user input is reflected inside an element that has `ng-app` (or any parent th
 </body>
 ```
 
-If `userInput` = `{{7*7}}` → renders `49`
-If `userInput` = `{{constructor.constructor('alert(1)')()}}` → executes `alert(1)` 💥
+This is a form of expression injection, not simply “ordinary JavaScript execution everywhere inside `{{ }}`.”
 
 ---
 
-## Why angle brackets don't matter here
+## Why angle brackets do not save the page
 
-Normal XSS requires injecting HTML tags like `<script>` or `<img>`. But if the application HTML-encodes `<` and `>`, those payloads fail.
+A normal HTML-based XSS payload may rely on `<script>`, `<img>`, or event-handler markup. If the application HTML-encodes angle brackets, those payloads may fail.
 
-AngularJS changes this completely:
-
-```
-Normal XSS: needs <tags>
-AngularJS XSS: only needs {{ }} — no tags required
-```
-
-This is why the lab is titled *"with angle brackets and double quotes HTML-encoded"* — the protection doesn't help because AngularJS processes `{{ }}` before the browser sees the HTML.
+AngularJS expression injection changes that because the dangerous primitive is the AngularJS expression itself, not a standard HTML tag. The page is vulnerable when the framework evaluates untrusted content in a template context.
 
 ---
 
@@ -50,45 +40,67 @@ This is why the lab is titled *"with angle brackets and double quotes HTML-encod
 
 **Level:** Practitioner ✅ Solved
 
-**Setup:** The page uses `ng-app`. User input from the search box is reflected in the page inside the AngularJS-controlled region.
+**Setup:** The page uses `ng-app`. User input is reflected into an AngularJS-controlled expression context.
 
 **Payload:**
-```
+```text
 {{constructor.constructor('alert(1)')()}}
 ```
 
 **How it works:**
 ```javascript
-constructor          // every object has a constructor property
-.constructor         // Function.constructor = the Function constructor itself
-('alert(1)')         // creates a new function with body: alert(1)
-()                   // immediately calls it
+constructor
+.constructor
+('alert(1)')
+()
 ```
 
-This is equivalent to:
-```javascript
-new Function('alert(1)')()
-```
+This payload reaches the `Function` constructor and calls it dynamically, which can trigger script execution.
 
-Which executes `alert(1)`.
+---
+
+## Important distinctions
+
+### 1. AngularJS expression language
+AngularJS expressions are evaluated using AngularJS expression rules, not the same as arbitrary browser-executed JavaScript in every template or HTML context.
+
+### 2. AngularJS expression injection
+This is the issue where untrusted input is reflected into an expression context and evaluated by AngularJS.
+
+### 3. Client-Side Template Injection (CSTI)
+This is a broader category describing template evaluation vulnerabilities in client-side frameworks or template engines.
+
+### 4. AngularJS sandbox escape
+A sandbox escape is a more advanced and more specific issue involving AngularJS sandbox restrictions and how expression evaluation may be bypassed or abused.
+
+These concepts are related but not interchangeable. A vulnerable template context is not automatically proof of a sandbox escape, and payload behavior can vary across AngularJS versions and configuration.
+
+---
+
+## Advanced AngularJS notes
+
+The more advanced AngularJS studies concern sandbox escapes, CSP, and expression restrictions. These are deliberately postponed until the relevant browser-security and AngularJS knowledge is strengthened.
+
+### Sandbox escape
+AngularJS sandboxing restricts what expressions can access. Sandbox escapes are a separate class of issue requiring deeper understanding of framework internals and browser behavior.
+
+### CSP interaction
+CSP can limit script execution, but a bypass depends on the exact browser behavior, policy, and template evaluation path involved.
 
 ---
 
 ## Key Takeaways
 
-- AngularJS `{{ }}` = JavaScript execution inside HTML
-- No `<script>` or event handlers needed
-- HTML encoding of `<>` does **not** protect against this
-- Always check if the page loads AngularJS (`ng-app` in source)
-- This class of vulnerability is called **Server-Side Template Injection** when it happens server-side — but here it's client-side template injection
+- AngularJS expressions are evaluated in a template context, not treated as ordinary HTML text.
+- Expression injection can bypass simple HTML encoding protections if the expression mechanism is reached.
+- A vulnerable template context is not the same as a sandbox escape.
+- The exact behavior depends on AngularJS version, framework configuration, and browser context.
 
 ---
 
-## 🚧 Advanced AngularJS (To Be Completed)
+## 🚧 Advanced AngularJS (Postponed)
 
-The following labs require understanding AngularJS's sandbox and how to escape it:
+The following labs remain postponed because they require a deeper understanding of AngularJS internals, sandbox behavior, and CSP analysis:
 
-- Reflected XSS with AngularJS sandbox escape without strings
-- Reflected XSS with AngularJS sandbox escape and CSP
-
-These require deeper knowledge of AngularJS internals and will be completed in a later stage.
+- Reflected XSS with AngularJS sandbox escape without strings.
+- Reflected XSS with AngularJS sandbox escape and CSP.

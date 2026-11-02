@@ -2,19 +2,19 @@
 
 ## How It Works
 
-The malicious payload is **saved** in the application's database (comment, profile, message, etc.) and then displayed to other users. Every user who views the page executes the payload.
+Stored XSS occurs when attacker-controlled input is saved by the application and later retrieved and rendered to other users. The malicious payload is not delivered in a single request; it becomes part of the application's stored content.
 
-```
+```text
 Attacker submits malicious input
         ↓
-Application saves it to database
+Application stores it
         ↓
-Any user views the page
+Another user loads the affected page
         ↓
-Browser executes the stored script
+The stored value is rendered and may execute in the browser
 ```
 
-> ⚠️ Stored XSS is **persistent** — no need to trick the victim into clicking a link. Anyone visiting the page is affected.
+> Stored XSS is persistent because the payload is saved and later rendered. This can affect multiple users and broaden impact, but severity still depends on the affected feature, user exposure, privileges, and the execution context.
 
 ---
 
@@ -24,16 +24,16 @@ Browser executes the stored script
 
 **Attacker submits:**
 ```html
-<script>alert(document.cookie)</script>
+<script>alert(1)</script>
 ```
 
 **What gets saved in the database:**
-```
-<script>alert(document.cookie)</script>
+```text
+<script>alert(1)</script>
 ```
 
-**What every visitor sees (rendered in browser):**
-→ Script executes and sends their cookie to the attacker.
+**What other users see when the page loads:**
+The browser may interpret the stored HTML and execute the script.
 
 ---
 
@@ -48,7 +48,7 @@ Browser executes the stored script
 <script>alert(1)</script>
 ```
 
-**Why it works:** The comment is saved as-is and rendered in the page HTML. Every user who loads the page triggers the alert.
+**Why it works:** The application stores the malicious input and later renders it as HTML without safe output handling.
 
 ---
 
@@ -56,16 +56,17 @@ Browser executes the stored script
 
 | | Reflected | Stored |
 |---|---|---|
-| Payload location | URL / request | Database |
-| Persistence | ❌ No | ✅ Yes |
-| Who is affected | Only victim who clicks link | Every user who visits the page |
-| Social engineering needed | ✅ Yes | ❌ No |
-| Severity | High | Critical |
+| Payload location | Request/response | Stored application data |
+| Persistence | Usually no | Yes |
+| Who is affected | Victim who loads the crafted request | Any user who views the affected content |
+| Delivery | Request-driven | Stored and later retrieved |
+| Impact | Depends on context and exposure | Can affect multiple users |
 
 ---
 
 ## Key Takeaways
 
-- Stored XSS is more dangerous than Reflected — no user interaction beyond visiting the page
-- Common injection points: comments, usernames, profile bios, product reviews, support tickets
-- Even if input is sanitized on display, check if it's stored raw and displayed elsewhere
+- Stored XSS is often more impactful because it can affect many users.
+- Common injection points include comments, profile fields, product reviews, ticket content, and user-generated data.
+- Severity depends on the actual feature and execution context, not on persistence alone.
+- Even if input is sanitized on display, the same value may still be dangerous if it is stored without proper validation or encoding.
