@@ -4,122 +4,176 @@
 
 ---
 
+## Project Overview
+
+This repository documents my practical study of Cross-Site Scripting (XSS), including how these flaws are discovered in authorized labs, how payloads reach dangerous sinks, and how secure coding patterns reduce the risk of exploitation.
+
+The focus is on understanding the data flow from attacker-controlled input to browser-executed script, along with the importance of context-aware output handling, browser behavior, and defensive coding.
+
+---
+
+## Learning Objectives
+
+- Understanding Reflected XSS.
+- Understanding Stored XSS.
+- Understanding DOM-Based XSS.
+- Identifying Sources and Sinks.
+- Understanding HTML, JavaScript, and URL contexts.
+- Understanding encoding and output handling.
+- Analyzing filters and basic bypass techniques.
+- Understanding XSS impact.
+- Understanding XSS prevention and secure coding.
+- Developing manual vulnerability discovery skills.
+
+> This repository reflects the current learning stage: I have completed the foundational XSS labs and intentionally postponed six advanced labs until later study.
+
+---
+
 ## What is XSS?
 
-Cross-Site Scripting (XSS) is a vulnerability that allows an attacker to inject malicious JavaScript into a web page viewed by other users. The browser trusts the page's content — so if an attacker's script is part of that page, the browser will execute it.
+Cross-Site Scripting (XSS) is a vulnerability in which attacker-controlled input is included in a web page in a way that causes browser-executed script. The browser treats the injected content as trusted page content, so the malicious script runs under the page's origin.
 
 **Core idea:**
-```
-User input → Injected into page → Browser executes it
+
+```text
+Attacker-controlled input → unsafe rendering or execution → browser executes script
 ```
 
 ---
 
 ## XSS Types
 
-| Type | Where does the payload live? | Persists? |
+| Type | Vulnerability mechanism | Persistence |
 |---|---|---|
-| Reflected | Server reflects input back in response | ❌ No |
-| Stored | Payload saved in database, shown to all users | ✅ Yes |
-| DOM-based | Payload processed by JavaScript in the browser | ❌ No (client-side only) |
+| Reflected XSS | Input is reflected unsafely in a server response | Usually non-persistent |
+| Stored XSS | Input is stored and later rendered unsafely | Persistent |
+| DOM-Based XSS | Client-side JavaScript processes untrusted data through an unsafe operation | Can be reflected or stored |
+
+These categories describe different aspects of XSS and can overlap. DOM-Based XSS is defined by unsafe client-side processing of data; it may involve reflected or stored attacker-controlled values.
 
 ---
 
 ## Key Concepts
 
 ### Source
-Where attacker-controlled data enters the application.
-```
+A source is a place where untrusted data enters the application.
+
+```text
 location.search    → query string (?q=...)
 location.hash      → fragment (#...)
+location.href      → full URL
+location.pathname  → path portion of URL
 document.referrer  → referring URL
-document.cookie    → cookies
+window.name        → browser-managed value that may be attacker-influenced in some scenarios
 ```
 
+A source only matters when the data can be influenced by an attacker under the relevant threat model.
+
 ### Sink
-Where data is written to the page or executed.
-```
-innerHTML               → renders HTML
-document.write()        → writes to DOM
-eval()                  → executes JS
-jQuery $()              → creates DOM elements
-jQuery .attr()          → sets element attributes
+A sink is a place where data is used or interpreted in a way that can trigger browser behavior.
+
+```text
+innerHTML             → renders HTML
+element.outerHTML     → writes HTML
+document.write()      → writes to DOM
+eval()                → executes JS
+jQuery DOM methods    → manipulate DOM using HTML or selectors
+javascript: URL values → browser executes when activated
 ```
 
 **The vulnerability exists when:**
+
+```text
+Attacker-controlled input → source → data processing → sink → browser interpretation
 ```
-Source → (no sanitization) → Sink
-```
+
+This flow is not automatically exploitable, but it is the core pattern to analyze.
 
 ---
 
-## Lab Progress
+## Repository Navigation
 
-### ✅ Completed
-
-| Lab | Level | Key Takeaway |
-|---|---|---|
-| Reflected XSS into HTML context with nothing encoded | Apprentice | Basic `<script>alert(1)</script>` |
-| Stored XSS into HTML context with nothing encoded | Apprentice | Payload stored, executes for every visitor |
-| DOM XSS in `document.write` sink using `location.search` | Apprentice | `document.write` renders raw HTML from URL |
-| DOM XSS in `innerHTML` sink using `location.search` | Apprentice | `innerHTML` parses HTML from URL |
-| DOM XSS in jQuery `href` attribute sink using `location.search` | Apprentice | `attr("href")` + `javascript:` URL |
-| DOM XSS in jQuery selector sink using hashchange event | Apprentice | `$()` parses HTML from `location.hash` |
-| DOM XSS in `document.write` inside select element | Practitioner | Breaking out of `<select>` context |
-| DOM XSS in AngularJS expression | Practitioner | `{{}}` executes JS without `<script>` |
-
-### 🚧 Not Yet Completed — Requires Deeper JS Knowledge
-
-| Lab | Level | What's Needed |
-|---|---|---|
-| Reflected XSS into attribute with angle brackets HTML-encoded | Apprentice | Attribute context escaping |
-| Stored XSS into anchor href with double quotes HTML-encoded | Apprentice | `javascript:` in href |
-| Reflected XSS into JS string with angle brackets HTML-encoded | Apprentice | Breaking out of JS string context |
-| Reflected DOM XSS | Practitioner | Understanding JS response parsing |
-| Stored DOM XSS | Practitioner | JS-based sink in stored context |
-| Reflected XSS with most tags blocked | Practitioner | WAF bypass techniques |
-| Reflected XSS with all tags blocked except custom | Practitioner | Custom HTML tags |
-| Reflected XSS with SVG markup | Practitioner | SVG-based payloads |
-| Reflected XSS in canonical link tag | Practitioner | `accesskey` attribute abuse |
-| Reflected XSS into JS string (single quote + backslash escaped) | Practitioner | JS string escape bypass |
-| Reflected XSS into JS string (angle brackets + double quotes encoded) | Practitioner | Single quote escape bypass |
-| Stored XSS into onclick event | Practitioner | Event handler context |
-| Reflected XSS into template literal | Practitioner | `${}` inside backtick strings |
-| Exploiting XSS to steal cookies | Practitioner | Real-world exploitation |
-| Exploiting XSS to capture passwords | Practitioner | Real-world exploitation |
-| Exploiting XSS to bypass CSRF defenses | Practitioner | Chaining vulnerabilities |
-| Reflected XSS with AngularJS sandbox escape (no strings) | Expert | Advanced AngularJS bypass |
-| Reflected XSS with AngularJS sandbox escape and CSP | Expert | CSP + AngularJS |
-| Reflected XSS with event handlers and href blocked | Expert | Advanced filter bypass |
-| Reflected XSS in JS URL with characters blocked | Expert | URL context bypass |
-| Reflected XSS with strict CSP + dangling markup | Practitioner | CSP bypass techniques |
-| Reflected XSS protected by CSP with bypass | Expert | Full CSP bypass |
+- [lab-tracker.md](./lab-tracker.md)
+- [methodology/discovery-workflow.md](./methodology/discovery-workflow.md)
+- [reflected-xss/notes.md](./reflected-xss/notes.md)
+- [stored-xss/notes.md](./stored-xss/notes.md)
+- [dom-xss/notes.md](./dom-xss/notes.md)
+- [dom-xss/document-write.md](./dom-xss/document-write.md)
+- [dom-xss/innerHTML.md](./dom-xss/innerHTML.md)
+- [dom-xss/jquery.md](./dom-xss/jquery.md)
+- [dom-xss/angularjs.md](./dom-xss/angularjs.md)
+- [contexts/notes.md](./contexts/notes.md)
+- [bypasses-and-csp/notes.md](./bypasses-and-csp/notes.md)
+- [exploitation/notes.md](./exploitation/notes.md)
 
 ---
 
-## Current Status & Next Steps
+## Progress Overview
 
-### What I understand well ✅
-- The three types of XSS and how they differ
-- Sources and sinks concept
-- Basic DOM XSS via `document.write`, `innerHTML`
-- jQuery-based DOM XSS (`attr()`, `$()`, `hashchange`)
-- AngularJS template injection via `{{}}`
+### Completed labs (24)
 
-### What requires more work 🚧
-- Injection contexts (attribute, JS string, template literal)
-- Filter and WAF bypass techniques
-- Real-world exploitation (cookie stealing, CSRF bypass)
-- Advanced AngularJS sandbox escapes
-- Content Security Policy (CSP) and how to bypass it
+#### Reflected XSS
+- Reflected XSS into HTML context with nothing encoded.
 
-### Why I paused advanced labs
-Most of the remaining labs require a **deeper understanding of JavaScript** — specifically how the browser parses JS strings, how encoding works at different contexts, and how to manipulate JS execution flow.
+#### Stored XSS
+- Stored XSS into HTML context with nothing encoded.
+- Stored XSS into anchor href attribute with double quotes HTML-encoded.
 
-**I am currently improving my JavaScript skills with a focus on:**
-- DOM manipulation
-- String handling and encoding
-- Event handling
-- Reading and manipulating URLs (`location` object)
+#### DOM-based XSS
+- DOM XSS in document.write sink using source location.search.
+- DOM XSS in innerHTML sink using source location.search.
+- DOM XSS in jQuery anchor href attribute sink using location.search source.
+- DOM XSS in jQuery selector sink using a hashchange event.
+- DOM XSS in document.write sink using location.search inside a select element.
+- DOM XSS in AngularJS expression with angle brackets and double quotes HTML-encoded.
+- Reflected DOM XSS.
+- Stored DOM XSS.
 
-I will return to the advanced XSS labs once I have the JS foundation needed to understand and exploit these contexts properly.
+#### XSS contexts
+- Reflected XSS into attribute with angle brackets HTML-encoded.
+- Reflected XSS into a JavaScript string with angle brackets HTML encoded.
+- Reflected XSS into a JavaScript string with single quote and backslash escaped.
+- Reflected XSS into a JavaScript string with angle brackets and double quotes HTML encoded and single quotes escaped.
+- Stored XSS into onclick event with angle brackets and double quotes HTML encoded and single quotes and backslash escaped.
+- Reflected XSS into a template literal with angle brackets, single quotes, double quotes, backslash and backticks Unicode-escaped.
+- Reflected XSS into HTML context with most tags and attributes blocked.
+- Reflected XSS into HTML context with all tags blocked except custom ones.
+- Reflected XSS with some SVG markup allowed.
+- Reflected XSS in canonical link tag.
+
+#### XSS exploitation
+- Exploiting cross-site scripting to steal cookies.
+- Exploiting cross-site scripting to capture passwords.
+- Exploiting XSS to bypass CSRF defenses.
+
+### Postponed labs (6)
+
+These labs are intentionally postponed and not marked as failed. They require prerequisites such as AngularJS internals, sandboxing, CSP analysis, browser behavior, and advanced filter analysis.
+
+#### Expert
+- Reflected XSS with AngularJS sandbox escape without strings.
+- Reflected XSS with AngularJS sandbox escape and CSP.
+- Reflected XSS with event handlers and href attributes blocked.
+- Reflected XSS in a JavaScript URL with some characters blocked.
+- Reflected XSS protected by CSP, with CSP bypass.
+
+#### Practitioner
+- Reflected XSS protected by very strict CSP, with dangling markup attack.
+
+These topics will be revisited after studying the necessary browser and security concepts.
+
+---
+
+## Where to Start
+
+- Begin with [reflected-xss/notes.md](./reflected-xss/notes.md) for the fundamentals.
+- Move to [stored-xss/notes.md](./stored-xss/notes.md) for persistence-based issues.
+- Review [dom-xss/notes.md](./dom-xss/notes.md) to understand source-to-sink flows in client-side JavaScript.
+- Use [contexts/notes.md](./contexts/notes.md) to reason about context-sensitive payloads.
+- Use [bypasses-and-csp/notes.md](./bypasses-and-csp/notes.md) and [exploitation/notes.md](./exploitation/notes.md) for the advanced and exploitation-oriented sections.
+
+---
+
+## Current State
+
+This repository reflects the current stage of the learning journey: 24 PortSwigger XSS labs have been completed, 6 advanced labs are intentionally postponed, and the focus is now moving toward other OWASP web-vulnerability topics while continuing to deepen JavaScript, browser security, CSP, and AngularJS knowledge.

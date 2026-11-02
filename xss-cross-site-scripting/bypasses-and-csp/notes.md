@@ -1,56 +1,69 @@
 # XSS Bypasses & CSP
 
-> 🚧 This section will be completed in the advanced phase of my learning path.
+This section separates what has already been studied from the more advanced browser-security topics that are intentionally postponed.
+
+---
+
+## Completed filter and markup restriction labs
+
+The following labs are completed and should be treated as part of the foundational XSS learning stage:
+
+- Reflected XSS into HTML context with most tags and attributes blocked.
+- Reflected XSS into HTML context with all tags blocked except custom ones.
+- Reflected XSS with some SVG markup allowed.
+- Reflected XSS in canonical link tag.
+
+These labs illustrate the importance of understanding the browser's parsing rules and the ways in which filter restrictions may still leave exploitable paths.
 
 ---
 
 ## WAF & Filter Bypass
 
-Web Application Firewalls (WAFs) and input filters try to block XSS payloads. Bypassing them requires understanding what exactly is being blocked and finding alternative payloads.
+WAFs and input filters try to block XSS payloads by restricting tags, attributes, or patterns. Bypassing them requires understanding exactly what the filter is checking and then finding an alternative payload or injection path that the browser still interprets as active content.
 
-**Common bypass techniques:**
-- Using alternative tags (`<svg>`, `<details>`, `<video>`)
-- Using custom HTML tags
-- Case manipulation (`<ScRiPt>`)
-- Encoding (`&#x61;&#x6C;&#x65;&#x72;&#x74;`)
-
-**Labs:** 🚧
-- Reflected XSS with most tags and attributes blocked
-- Reflected XSS with all tags blocked except custom ones
-- Reflected XSS with some SVG markup allowed
-- Reflected XSS in canonical link tag
+**Common techniques include:**
+- alternative HTML or SVG elements
+- custom elements or unusual markup
+- case manipulation and normalization problems
+- encoding tricks that bypass naive validation
 
 ---
 
-## Content Security Policy (CSP)
+## CSP concepts
 
-CSP is a browser security mechanism that restricts which scripts can execute on a page. A strong CSP can prevent XSS even if injection is possible.
+Content Security Policy (CSP) restricts which scripts, styles, and other active resources a browser may load. A strong CSP can reduce the impact of an XSS issue by limiting script execution.
 
-**CSP example:**
-```
+**Example:**
+```http
 Content-Security-Policy: script-src 'self'
 ```
-This only allows scripts from the same origin — blocking injected scripts.
 
-**Bypass techniques:**
-- Dangling markup attacks
-- JSONP endpoints on whitelisted domains
-- Script gadgets
+This blocks script execution from untrusted sources unless explicitly allowed.
 
-**Labs:** 🚧
-- Reflected XSS protected by very strict CSP, with dangling markup attack
-- Reflected XSS protected by CSP, with CSP bypass
+CSP is important, but it is not a universal solution. It must be combined with correct input handling, safe output encoding, and careful review of the application architecture.
 
 ---
 
-## AngularJS Sandbox Escape
+## Advanced CSP and sandbox topics (postponed)
 
-Newer versions of AngularJS introduced a "sandbox" to prevent `{{ }}` from accessing dangerous objects. Sandbox escapes are techniques to break out of this restriction.
+The following labs remain intentionally postponed and are not marked as failed:
 
-**Labs:** 🚧
-- Reflected XSS with AngularJS sandbox escape without strings
-- Reflected XSS with AngularJS sandbox escape and CSP
+### Expert labs
+- Reflected XSS with AngularJS sandbox escape without strings.
+- Reflected XSS with AngularJS sandbox escape and CSP.
+- Reflected XSS with event handlers and href attributes blocked.
+- Reflected XSS in a JavaScript URL with some characters blocked.
+- Reflected XSS protected by CSP, with CSP bypass.
+
+### Practitioner lab
+- Reflected XSS protected by very strict CSP, with dangling markup attack.
+
+These topics require deeper study of JavaScript, browser security, CSP enforcement, and advanced filter/parser behavior.
 
 ---
 
-> 📌 These are advanced topics that require a solid understanding of JavaScript, browser security models, and HTTP headers. Will be tackled after completing the foundational phases.
+## Key Takeaways
+
+- Completed filter-restriction labs are part of the current skill set.
+- Advanced CSP and sandbox bypass work remains a future learning stage.
+- The correct mindset is to reason about what the browser will interpret, not just what a filter is trying to block.

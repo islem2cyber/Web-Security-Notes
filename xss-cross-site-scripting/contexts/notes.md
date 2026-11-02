@@ -1,16 +1,16 @@
 # XSS Contexts
 
-> 🚧 This section is partially complete. Advanced context labs will be revisited after strengthening JavaScript knowledge.
+> This section documents the key output contexts involved in XSS. The goal is to understand that one payload is not valid in every context and that encoding must match the browser interpretation.
 
 ---
 
-## What is an "Injection Context"?
+## What Is an Injection Context?
 
-The context is **where exactly in the HTML/JS your input lands**. The same payload won't work in every context — you need to adapt based on where you are.
+The context is the exact place where attacker-controlled data is inserted into HTML, JavaScript, URLs, or another browser-interpreted format. The same payload may work in one context and fail in another because the browser parses the surrounding syntax differently.
 
 ---
 
-## Context 1: HTML Body Context
+## Context 1: HTML Element Context
 
 Your input lands directly in the HTML body.
 
@@ -18,12 +18,14 @@ Your input lands directly in the HTML body.
 <p>Hello, [YOUR INPUT]</p>
 ```
 
-**No encoding → basic payload works:**
+**If no encoding is applied, basic payloads may work:**
 ```html
 <script>alert(1)</script>
 ```
 
-**Labs completed:** Reflected XSS + Stored XSS (nothing encoded) ✅
+**Completed lab examples:**
+- Reflected XSS into HTML context with nothing encoded.
+- Stored XSS into HTML context with nothing encoded.
 
 ---
 
@@ -35,22 +37,15 @@ Your input lands inside an HTML attribute.
 <input value="[YOUR INPUT]">
 ```
 
-**If angle brackets are encoded (`<` → `&lt;`):**
-- `<script>` won't work
-- But you can break out of the attribute with `"` and inject an event handler:
+If the application HTML-encodes angle brackets, a direct `<script>` payload may fail. However, if the attribute can be broken out of, a payload such as an event handler may still execute.
 
-```
-" onmouseover="alert(1)
-```
-
-**Result:**
 ```html
 <input value="" onmouseover="alert(1)">
 ```
 
-**Labs:** 🚧 To be completed
-- Reflected XSS into attribute with angle brackets HTML-encoded
-- Stored XSS into anchor href attribute with double quotes HTML-encoded
+**Completed labs:**
+- Reflected XSS into attribute with angle brackets HTML-encoded.
+- Stored XSS into anchor href attribute with double quotes HTML-encoded.
 
 ---
 
@@ -64,58 +59,88 @@ Your input lands inside a JavaScript string.
 </script>
 ```
 
-**Goal:** Break out of the string and inject JS.
+The goal is to break out of the quote-delimited string and inject executable JavaScript.
 
-**If only angle brackets are encoded:**
-```
-'; alert(1); var x='
-```
-
-**Result:**
 ```javascript
 var search = ''; alert(1); var x='';
 ```
 
-**Labs:** 🚧 To be completed
-- Reflected XSS into JS string with angle brackets HTML-encoded
-- Reflected XSS into JS string with single quote and backslash escaped
-- Reflected XSS into JS string with angle brackets + double quotes encoded and single quotes escaped
+**Completed labs:**
+- Reflected XSS into a JavaScript string with angle brackets HTML encoded.
+- Reflected XSS into a JavaScript string with single quote and backslash escaped.
+- Reflected XSS into a JavaScript string with angle brackets and double quotes HTML encoded and single quotes escaped.
 
 ---
 
-## Context 4: Template Literal Context
+## Context 4: JavaScript Template Literal Context
 
-Your input lands inside a JavaScript template literal (backtick string).
+Your input lands inside a JavaScript template literal.
 
 ```javascript
 var message = `Hello, [YOUR INPUT]`;
 ```
 
-Template literals evaluate `${}` expressions:
-```
-${alert(1)}
-```
+Template literals can evaluate `${...}` expressions when the input is interpreted in that context.
 
-**Result:**
 ```javascript
 var message = `Hello, ${alert(1)}`;
 ```
 
-**Lab:** 🚧 To be completed
-- Reflected XSS into a template literal with angle brackets, single, double quotes, backslash and backticks Unicode-escaped
+**Completed lab:**
+- Reflected XSS into a template literal with angle brackets, single quotes, double quotes, backslash and backticks Unicode-escaped.
+
+---
+
+## Context 5: Event-Handler Attribute Context
+
+Your input is placed in an event handler such as `onerror`, `onclick`, or `onmouseover`.
+
+```html
+<img src=x onerror=alert(1)>
+```
+
+**Completed lab:**
+- Stored XSS into onclick event with angle brackets and double quotes HTML encoded and single quotes and backslash escaped.
+
+---
+
+## Context 6: URL-Related Context
+
+Your input lands in a URL or attribute that is interpreted as a navigable URL.
+
+```html
+<a href="javascript:alert(1)">Click</a>
+```
+
+**Completed labs:**
+- Stored XSS into anchor href attribute with double quotes HTML-encoded.
+- Reflected XSS in canonical link tag.
 
 ---
 
 ## Summary Table
 
-| Context | Breaks with | Payload type |
+| Context | Typical break condition | Example payload pattern |
 |---|---|---|
-| HTML body | nothing | `<script>` or `<img onerror=>` |
-| HTML attribute | `"` | `" onmouseover="alert(1)` |
-| JS string | `'` or `"` | `'; alert(1);//` |
-| Template literal | `${` | `${alert(1)}` |
-| href attribute | nothing (if unencoded) | `javascript:alert(1)` |
+| HTML element | raw HTML is allowed | `<script>alert(1)</script>` |
+| HTML attribute | quote or attribute breakout | `" onmouseover="alert(1)` |
+| JavaScript string | quote or string termination | `';alert(1);//` |
+| Template literal | `${...}` evaluation | `${alert(1)}` |
+| Event handler | event attribute parsing | `onerror=alert(1)` |
+| URL context | dangerous scheme or navigation | `javascript:alert(1)` |
 
 ---
 
-> 📌 **Note:** The ability to exploit these contexts depends on understanding exactly how JavaScript and HTML parse strings and encoding. These labs will be completed after advancing JavaScript skills.
+## Why Context Matters
+
+Encoding must match the output context. HTML encoding does not protect JavaScript string contexts, JavaScript escaping does not protect HTML contexts, and URL encoding is not a universal XSS defense.
+
+The general rule is:
+
+- HTML output requires HTML-safe encoding.
+- Attribute output requires attribute-safe encoding.
+- JavaScript string output requires JavaScript string escaping.
+- URL output requires URL-aware handling.
+- Template contexts must be treated as code execution contexts.
+
+A strong defense is to use the correct escaping or sanitization for the exact output context, rather than relying on a single encoding scheme everywhere.
