@@ -166,11 +166,16 @@ These topics will be revisited after studying the necessary browser and security
 
 ## Where to Start
 
-- Begin with [reflected-xss/notes.md](./reflected-xss/notes.md) for the fundamentals.
-- Move to [stored-xss/notes.md](./stored-xss/notes.md) for persistence-based issues.
-- Review [dom-xss/notes.md](./dom-xss/notes.md) to understand source-to-sink flows in client-side JavaScript.
-- Use [contexts/notes.md](./contexts/notes.md) to reason about context-sensitive payloads.
-- Use [bypasses-and-csp/notes.md](./bypasses-and-csp/notes.md) and [exploitation/notes.md](./exploitation/notes.md) for the advanced and exploitation-oriented sections.
+The foundational XSS learning stage is complete: 24 PortSwigger XSS labs are completed and 6 advanced labs are intentionally postponed. SQL Injection is also complete, including all PortSwigger labs. The next recommended topic is **Authentication Vulnerabilities**; there is no need to repeat beginner XSS or SQL Injection material.
+
+Focus areas:
+- Authentication mechanisms and authentication vs. authorization.
+- Password-based authentication weaknesses.
+- Brute-force protection, rate limiting, and username enumeration.
+- Password reset vulnerabilities and multi-factor authentication weaknesses.
+- Session management and related security issues.
+
+Keep this XSS documentation as a reference while moving through other OWASP Web Security vulnerabilities. Revisit the six postponed XSS labs later, after strengthening JavaScript, browser security, AngularJS, and CSP knowledge.
 
 ---
 

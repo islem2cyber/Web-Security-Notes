@@ -38,9 +38,17 @@ Content Security Policy (CSP) restricts which scripts, styles, and other active 
 Content-Security-Policy: script-src 'self'
 ```
 
-This blocks script execution from untrusted sources unless explicitly allowed.
+`'self'` generally allows scripts loaded from the same origin. This directive does not normally allow inline scripts; inline script blocks and event-handler attributes are restricted unless the policy explicitly permits them. A policy can authorize specific inline scripts with a nonce or a hash. The `unsafe-inline` keyword permits inline script and weakens this protection, so it should generally be avoided.
 
-CSP is important, but it is not a universal solution. It must be combined with correct input handling, safe output encoding, and careful review of the application architecture.
+Keep these controls distinct:
+
+- **Script source restrictions:** values such as `'self'` constrain where scripts can be loaded from.
+- **Inline script restrictions:** inline code is normally blocked unless explicitly authorized.
+- **Nonce-based policies:** a per-response nonce can authorize specific script elements.
+- **Hash-based policies:** a hash can authorize inline script content that matches the approved value.
+- **CSP bypasses:** weaknesses in the complete policy or application may create paths around intended restrictions; a bypass is not implied by the presence of CSP.
+
+CSP is a defense-in-depth mechanism, not a universal guarantee against every XSS scenario. Its effectiveness depends on the complete policy, application behavior, allowed script sources, and browser enforcement. It must be combined with correct input handling and safe, context-aware output handling.
 
 ---
 
