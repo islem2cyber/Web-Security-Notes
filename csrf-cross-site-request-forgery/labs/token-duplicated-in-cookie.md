@@ -19,7 +19,7 @@ No exact lab exploit steps or payloads are claimed here.
 
 ## What the lab teaches
 
-- Double-submit is weaker than a synchronizer token unless carefully implemented.
+- Naive double-submit depends on stronger cookie-integrity assumptions than a synchronizer token; signed and session-bound designs can address these risks.
 - Cookie scope and control are security-critical.
 - A matching value must be tied to session state or protected by a stronger mechanism.
 
@@ -36,7 +36,7 @@ An attacker may be able to influence or reuse the needed cookie/request pair, de
 
 ## Key takeaways
 
-Matching client-supplied values is not equivalent to server-side intent verification.
+Matching client-supplied values is not equivalent to server-side validation against trusted session state.
 
 ## Personal notes
 

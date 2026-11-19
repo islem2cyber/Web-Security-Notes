@@ -19,7 +19,7 @@ This explanation is general; exact lab-specific evidence is not supplied.
 
 ## What the lab teaches
 
-- Randomness alone does not establish session intent.
+- Randomness alone does not provide session binding.
 - Tokens must be associated with trusted server-side session state.
 - Cross-session token acceptance is a root-cause implementation defect.
 
@@ -36,7 +36,7 @@ An attacker can reuse a controlled token against a victim authenticated session.
 
 ## Key takeaways
 
-A CSRF token proves only what the server binds it to. Session binding is essential.
+A CSRF token provides evidence only for the properties the server validates against trusted context. Session binding is essential.
 
 ## Personal notes
 

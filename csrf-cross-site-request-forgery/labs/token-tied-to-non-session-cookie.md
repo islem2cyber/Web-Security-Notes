@@ -13,7 +13,7 @@ The application treats a non-session cookie or user-controlled cookie state as t
 
 ## Technical explanation
 
-If the cookie is predictable, settable by another context, or not bound to the authenticated identity, the server can accept a token relationship without proving the user's intent. Separate session and anti-CSRF state must remain verifiable by the server.
+If the cookie is predictable, settable by another context, or not bound to the authenticated identity, the server can accept a token relationship without verifying that it belongs to the current session. Separate session and anti-CSRF state must remain verifiable by the server.
 
 Exact lab payloads are intentionally omitted.
 
@@ -36,7 +36,7 @@ An attacker may establish or influence the required cookie state and supply a ma
 
 ## Key takeaways
 
-The critical relation is not "cookie plus parameter" but "trusted server-side session plus unpredictable request intent."
+The critical relation is not "cookie plus parameter" but an unpredictable token bound to trusted server-side session state.
 
 ## Personal notes
 

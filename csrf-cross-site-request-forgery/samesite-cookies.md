@@ -1,14 +1,14 @@
 # SameSite Cookies
 
-The SameSite attribute controls whether a browser includes a cookie on requests initiated by a cross-site context. It reduces some CSRF exposure but does not replace CSRF protections or define authorization.
+The SameSite attribute controls whether a browser includes a cookie based on the request's site context. It reduces some CSRF exposure but does not replace CSRF protections or define authorization. Browser implementations and navigation details can affect observed behavior.
 
 ## Cookie modes
 
 | Mode | Typical behavior |
 |---|---|
-| Strict | Sends the cookie primarily in same-site top-level or same-origin-style contexts, subject to browser rules and redirects. |
-| Lax | Sends the cookie for normal top-level navigations such as safe link navigation, while withholding it in many cross-site subresource and form contexts. |
-| None | Requires `Secure` and allows cross-site use subject to browser third-party-cookie policies. |
+| Strict | Sends the cookie with same-site requests and withholds it on cross-site requests, including cross-site top-level navigations. A later request from the destination site may be same-site and include it. |
+| Lax | Generally sends the cookie with same-site requests and cross-site top-level navigations using safe methods, while withholding it in many cross-site subresource and unsafe-method contexts. |
+| None | Requires `Secure` in modern browsers and allows cross-site use subject to browser third-party-cookie policies. |
 
 Actual behavior depends on browser versions and implementation details.
 
@@ -18,11 +18,11 @@ The `Secure` attribute requires HTTPS and prevents normal browser transmission o
 
 ## Same-origin, same-site, and cross-site
 
-An origin is a scheme, hostname, and port tuple. A site is a scheme and registrable domain concept used for SameSite policy. These concepts are related but not interchangeable.
+An origin is a scheme, hostname, and port tuple. SameSite uses a site concept, generally based on the scheme and registrable domain (the schemeful-site model), not the origin. Ports do not distinguish sites in the way they distinguish origins.
 
-For example, sibling subdomains may share a site but have different origins. Requests can be same-site while remaining cross-origin, and browser behavior and trust boundaries differ between the cases.
+For example, sibling subdomains using the same scheme can be same-site while having different origins. A same-site request can therefore still be cross-origin; SameSite does not make sibling origins equivalent or relax the Same-Origin Policy.
 
-Do not oversimplify a sibling domain as equivalent to a cross-origin or cross-site context. The relationship must be assessed for the cookie and for the browser context being tested.
+Do not treat sibling-domain requests as automatically cross-site just because they are cross-origin, or assume same-site means same-origin. Assess the scheme, registrable domain, cookie attributes, and browser request context.
 
 ## Bypasses and edge cases
 
@@ -44,4 +44,4 @@ The sibling-domain lab described in this repository specifically introduces Cros
 
 ## Limitations
 
-SameSite is valuable defense-in-depth, but browser settings, old clients, embedded contexts, redirects, and application misconfiguration can affect it. Sensitive mutations should still use framework CSRF defenses and explicit intent controls.
+SameSite is valuable defense-in-depth, but browser versions, embedded contexts, redirects, and application misconfiguration can affect observed behavior. Some browsers also apply compatibility behavior to cookies without an explicit SameSite attribute. Sensitive mutations should still use framework CSRF defenses and, for high-risk actions, explicit confirmation or reauthentication.

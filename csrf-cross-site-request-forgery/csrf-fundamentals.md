@@ -4,34 +4,34 @@ Cross-Site Request Forgery (CSRF) causes a user's browser to perform an unwanted
 
 ## Browser cookie behavior
 
-When a browser sends a request, it may attach relevant cookies according to cookie domain, path, SameSite policy, secure constraints, and browser behavior. Authentication cookies may therefore be sent to a legitimate application origin even when a request was initiated from an attacker-controlled page.
+When a browser sends a request, it may attach relevant cookies according to cookie domain, path, SameSite policy, secure constraints, and browser behavior. These cookies are ambient credentials: the browser can attach them to a request to the application even when the request was initiated from an attacker-controlled page.
 
-Automatic cookie attachment is not consent or authorization. It explains why the server can receive a valid session cookie for an action it did not intend the user to authorize.
+The key issue is that the browser attaches ambient credentials to a request that the server does not adequately verify as an intended application request. Automatic cookie attachment is not user consent.
 
-## Authentication versus authorization
+## Authentication, authorization, and CSRF protection
 
-- Authentication establishes or validates identity, for example through a login session.
-- Authorization decides whether that identity may perform an action or access a resource.
-- CSRF usually abuses an authenticated session; it does not prove that the victim is authorized to perform the action.
+- **Authentication** establishes or validates an identity, often represented by a session cookie.
+- **Authorization** determines whether that identity may access a resource or perform an action. It enforces permissions; it does not prove that the user initiated or intended a particular request.
+- **CSRF protection** helps the server distinguish requests arising from the application's legitimate interaction flow from requests an attacker induces a browser to send. A token or origin check is evidence about request context, not proof of human intent.
 
-Authorization is also needed for CSRF defenses: whether an operation is legitimate depends on the user's explicit intent and server-side session context.
+These controls address different questions. A sensitive action may need both an authorization check and CSRF protection. For high-risk actions, applications may additionally require explicit confirmation or reauthentication.
 
-## Required conditions
+## Conditions for CSRF
 
 A practical CSRF scenario generally requires:
 
-1. An authenticated user and a state-changing endpoint.
-2. Request parameters the attacker can predict or supply.
-3. No effective requirement for user intent or server-side request uniqueness.
-4. Browser rules that allow the request and relevant credentials to reach the target.
+1. A victim has credentials for an application, commonly a session cookie, that the browser may attach automatically.
+2. The attacker can cause the victim's browser to send a request to a state-changing endpoint while those credentials are attached.
+3. The attacker can supply or predict any request data needed for the action, or the endpoint does not require attacker-unknown data.
+4. The server does not adequately verify the request's legitimacy using effective CSRF controls.
 
-The exact browser context and method determine whether the request is viable.
+The exact browser context, credential type, request method, endpoint, and defenses determine whether a scenario is viable. A unique request value is not a universal prerequisite for a vulnerability; it matters only when the application requires such a value and whether it is protected against attacker use.
 
 ## CSRF and SOP
 
 The Same-Origin Policy prevents many script behaviors, such as reading a response across origins. It does not generally prevent a cross-origin page from causing the browser to submit a simple HTML form or load a resource.
 
-The browser is acting as a messenger, not exposing a readable response. SOP and credential policies restrict some interactions but do not prove that a mutation request was authorized.
+The browser can act as a messenger without exposing a readable response. SOP and credential policies restrict some interactions but do not establish that a state-changing request was intended by the user.
 
 ## CSRF and XSS
 

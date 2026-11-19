@@ -1,6 +1,6 @@
 # CSRF Tokens
 
-A CSRF token is an unpredictable server-validated value intended to prove that a state-changing request originated from the application's legitimate interaction flow.
+A CSRF token is an unpredictable server-validated value that provides evidence a state-changing request passed through the application's legitimate interaction flow. It does not by itself prove that a human intended the action.
 
 ## Synchronizer Token Pattern
 
@@ -34,13 +34,21 @@ Common defects include:
 
 ## Double-Submit Cookie Pattern
 
-In a double-submit implementation, the application emits a random cookie and requires the request to include the same value through a form or header. The server compares the submitted value with the cookie.
+In a double-submit implementation, the application emits a token in a cookie and requires the request to include the same value through a form or header. The server compares the submitted value with the cookie. The security depends on how the token is generated, what the server validates, and whether an attacker can set or influence the cookie.
 
-This pattern can fail if a subdomain or attacker-controlled content can set or manipulate the relevant cookie. A modern defense should use framework-provided, cryptographically bound anti-CSRF mechanisms or a strong synchronizer-token design. Where double-submit cookies are used, additional integrity and session-binding controls are required.
+### Comparing token strategies
+
+| Strategy | Server validation | Main trust assumption and security property |
+|---|---|---|
+| Naive Double-Submit Cookie | Compare the cookie value with the value submitted in the request. | Relies on an attacker being unable to set or influence the cookie and on a sufficiently unpredictable token. The matching values are not inherently bound to the authenticated session, so cookie injection or cross-session reuse can defeat it. |
+| Signed Double-Submit Cookie | Validate a cryptographic signature over a nonce and session-specific data, in addition to checking the submitted value. | Relies on a protected server-side signing key, correct signature validation, and binding to the current session. Properly implemented, this prevents a party that can merely set a cookie from forging a valid session-bound token without requiring per-token server storage. |
+| Session-bound CSRF Token (Synchronizer Token) | Compare the submitted token with a value stored in or securely associated with the authenticated server-side session. | Relies on unpredictable tokens, protected session state, and consistent validation. It provides explicit server-side session binding, at the cost of storing or managing token state. |
+
+Double-submit cookies are not inherently insecure. A naive implementation has weaker trust assumptions; signed double-submit can provide strong session binding when correctly designed, and synchronizer tokens provide a direct server-side binding. Choose and implement the approach according to the application's architecture and threat model.
 
 ## Duplicated cookie and request values
 
-If an application duplicates a token in a cookie and a request parameter but does not bind the value to the authenticated session, an attacker may be able to influence or obtain a valid relationship. SameSite can affect cookie attachment, but it is not a substitute for server-side token validation.
+If an application duplicates a token in a cookie and a request parameter but does not protect cookie integrity or bind the value to the authenticated session, an attacker may be able to influence or obtain a matching pair. SameSite can affect cookie attachment, but it is not a substitute for token integrity and validation.
 
 ## Practical remediation
 

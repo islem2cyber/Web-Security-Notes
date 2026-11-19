@@ -32,7 +32,7 @@ A browser navigation designed by the application or an attacker could cause the 
 - Require server-side anti-CSRF tokens.
 - Avoid open redirects and validate redirect targets.
 - Apply Origin validation where supported.
-- Keep sensitive mutations behind explicit, server-validated intent.
+- Keep sensitive mutations behind server-side CSRF validation; require confirmation or reauthentication separately when the action's risk warrants it.
 
 ## Key takeaways
 
